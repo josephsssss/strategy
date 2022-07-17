@@ -1,17 +1,13 @@
 package hello.advanced.trace.logtrace;
-
 import hello.advanced.trace.TraceId;
 import hello.advanced.trace.TraceStatus;
 import lombok.extern.slf4j.Slf4j;
-
 @Slf4j
 public class ThreadLocalLogTrace implements LogTrace {
     private static final String START_PREFIX = "-->";
     private static final String COMPLETE_PREFIX = "<--";
     private static final String EX_PREFIX = "<X-";
-    private ThreadLocal<TraceId> traceIdHolder = new ThreadLocal<>(); //traceId 동기화, 동시성 이슈 발생
-    private static int a = 0;
-
+    private ThreadLocal<TraceId> traceIdHolder = new ThreadLocal<>();
     @Override
     public TraceStatus begin(String message) {
         syncTraceId();
@@ -21,17 +17,14 @@ public class ThreadLocalLogTrace implements LogTrace {
                 traceId.getLevel()), message);
         return new TraceStatus(traceId, startTimeMs, message);
     }
-
     @Override
     public void end(TraceStatus status) {
         complete(status, null);
     }
-
     @Override
     public void exception(TraceStatus status, Exception e) {
         complete(status, e);
     }
-
     private void complete(TraceStatus status, Exception e) {
         Long stopTimeMs = System.currentTimeMillis();
         long resultTimeMs = stopTimeMs - status.getStartTimeMs();
@@ -47,35 +40,27 @@ public class ThreadLocalLogTrace implements LogTrace {
         }
         releaseTraceId();
     }
-
     private void syncTraceId() {
         TraceId traceId = traceIdHolder.get();
-        if (traceIdHolder == null) {
+        if (traceId == null) {
             traceIdHolder.set(new TraceId());
         } else {
             traceIdHolder.set(traceId.createNextId());
         }
     }
-
     private void releaseTraceId() {
         TraceId traceId = traceIdHolder.get();
         if (traceId.isFirstLevel()) {
-            /* traceIdHolder = null; //destroy
-            * 이부분 중요
-            * */
-            traceIdHolder.remove(); //destroy
+            traceIdHolder.remove();//destroy
         } else {
             traceIdHolder.set(traceId.createPreviousId());
         }
     }
-
     private static String addSpace(String prefix, int level) {
-        log.info("i = {}", a++);
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < level; i++) {
-            sb.append((i == level - 1) ? "|" + prefix : "| ");
+            sb.append( (i == level - 1) ? "|" + prefix : "| ");
         }
         return sb.toString();
     }
-
 }
